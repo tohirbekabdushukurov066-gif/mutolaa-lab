@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Mutolaa Lab</title>
+<meta name="description" content="Kutubxona — har bir kitob alohida dunyo. Savol bering, bahslashing, g'oyalarini oching." />
+<meta name="theme-color" content="#0B0C0E" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  html, body { background: #0B0C0E; margin: 0; }
+  #ilova { min-height: 100dvh; }
+  /* Ilova yuklanguncha ko'rinadigan ekran */
+  #yuklash {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px;
+    background: #0B0C0E; color: #8A9099;
+    font-family: Georgia, "Times New Roman", serif; text-align: center; padding: 24px;
+  }
+  #yuklash b { color: #C9A227; font-weight: normal; letter-spacing: .24em;
+    font-size: 12px; text-transform: uppercase; }
+  .aylana { width: 26px; height: 26px; border: 2px solid #ffffff22;
+    border-top-color: #C9A227; border-radius: 50%; animation: aylan 1s linear infinite; }
+  @keyframes aylan { to { transform: rotate(360deg); } }
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom": "https://esm.sh/react-dom@18.3.1?deps=react@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client?deps=react@18.3.1",
+    "lucide-react": "https://esm.sh/lucide-react@0.383.0?deps=react@18.3.1",
+    "mammoth": "https://esm.sh/mammoth@1.8.0"
+  }
+}
+</script>
+
+<script>
+/* ============================================================
+   1) XOTIRA — window.storage
+   Ilova kodi shu to'rt metodni ishlatadi. Artefakt muhitida ular
+   tayyor edi; bu yerda ularni qurilmaning o'z xotirasi (IndexedDB)
+   ustiga yozamiz. Ma'lumot qurilmadan chiqmaydi.
+   ============================================================ */
+(function () {
+  const DB = "mutolaa", STORE = "kv";
+  let ochish;
+
+  function db() {
+    if (ochish) return ochish;
+    ochish = new Promise((res, rej) => {
+      const q = indexedDB.open(DB, 1);
+      q.onupgradeneeded = () => q.result.createObjectStore(STORE);
+      q.onsuccess = () => res(q.result);
+      q.onerror = () => rej(q.error);
+    });
+    return ochish;
+  }
+
+  async function amal(rejim, ish) {
+    const d = await db();
+    return new Promise((res, rej) => {
+      const t = d.transaction(STORE, rejim);
+      const s = t.objectStore(STORE);
+      const r = ish(s);
+      t.oncomplete = () => res(r && "result" in r ? r.result : undefined);
+      t.onerror = () => rej(t.error);
+      t.onabort = () => rej(t.error);
+    });
+  }
+
+  window.storage = {
+    async get(key) {
+      const v = await amal("readonly", (s) => s.get(key));
+      return v === undefined ? null : { key, value: v };
+    },
+    async set(key, value) {
+      await amal("readwrite", (s) => s.put(String(value), key));
+      return { key, value };
+    },
+    async delete(key) {
+      await amal("readwrite", (s) => s.delete(key));
+      return { key, deleted: true };
+    },
+    async list(prefix) {
+      const barcha = await amal("readonly", (s) => s.getAllKeys());
+      const keys = (barcha || []).filter((k) => !prefix || String(k).startsWith(prefix));
+      return { keys, prefix };
+    },
+  };
+})();
+
+/* ============================================================
+   2) SO'ROVLARNI PROKSIGA BURISH
+   Ilova kodi Anthropic manziliga murojaat qiladi. Uni o'zgartirmasdan,
+   shu yerda ushlab, o'z serverimizga yo'naltiramiz. Kalit o'sha yerda —
+   brauzerda hech qachon ko'rinmaydi.
+   ============================================================ */
+(function () {
+  const asl = window.fetch.bind(window);
+  window.fetch = function (manzil, sozlama) {
+    const u = typeof manzil === "string" ? manzil : (manzil && manzil.url) || "";
+    if (u.includes("api.anthropic.com")) {
+      const s = { ...(sozlama || {}) };
+      const h = { ...(s.headers || {}) };
+      delete h["x-api-key"];
+      delete h["anthropic-version"];
+      s.headers = { ...h, "Content-Type": "application/json" };
+      return asl("/api/ask", s);
+    }
+    return asl(manzil, sozlama);
+  };
+})();
+</script>
+</head>
+
+<body>
+  <div id="yuklash">
+    <b>Mutolaa Laboratoriyasi</b>
+    <div class="aylana"></div>
+    <span style="font-size:13px">Kutubxona ochilmoqda…</span>
+  </div>
+
+  <div id="ilova"></div>
+
+  <script type="module">
+    import React from "react";
+    import { createRoot } from "react-dom/client";
+    import App from "./app.js";
+
+    try {
+      createRoot(document.getElementById("ilova")).render(React.createElement(App));
+      const y = document.getElementById("yuklash");
+      if (y) y.remove();
+    } catch (e) {
+      document.getElementById("yuklash").innerHTML =
+        '<b>Mutolaa Laboratoriyasi</b><span style="font-size:13px;max-width:280px;line-height:1.6">' +
+        "Ilova ochilmadi. Internetni tekshirib, sahifani yangilang.</span>";
+      console.error(e);
+    }
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  </script>
+</body>
+</html>

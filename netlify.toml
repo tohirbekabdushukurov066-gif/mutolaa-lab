@@ -1,0 +1,25 @@
+# Mutolaa Lab — Netlify sozlamalari
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Proksi — SPA qoidasidan OLDIN turishi shart
+[[redirects]]
+  from = "/api/ask"
+  to = "/.netlify/functions/ask"
+  status = 200
+  force = true
+
+# Ilova barcha yo'llarda ochilsin (bitta sahifali ilova)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
