@@ -4,13 +4,6 @@
   publish = "."
   functions = "netlify/functions"
 
-# Proksi — SPA qoidasidan OLDIN turishi shart
-[[redirects]]
-  from = "/api/ask"
-  to = "/.netlify/functions/ask"
-  status = 200
-  force = true
-
 # Ilova barcha yo'llarda ochilsin (bitta sahifali ilova)
 [[redirects]]
   from = "/*"
