@@ -2,7 +2,7 @@
    Kalit shu yerda qoladi. Brauzer bu funksiyaga murojaat qiladi,
    funksiya esa Gemini'ga. Kalit hech qachon telefonga tushmaydi. */
 
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-3.6-flash";
 const MAX_BELGI = 200000;
 const KUNLIK_CHEK = 300;
 
